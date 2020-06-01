@@ -32,37 +32,37 @@ class RankedStatus(IntEnum):
     LOVED = 5
 
 class Mods(IntEnum):
-    NOMOD = 0
-    NOFAIL = 1
-    EASY = 2 << 0
-    TOUCHSCREEN = 2 << 1
-    HIDDEN = 2 << 2
-    HARDROCK = 2 << 3
-    SUDDENDEATH = 2 << 4
-    DOUBLETIME = 2 << 5
-    RELAX = 2 << 6
-    HALFTIME = 2 << 7
-    NIGHTCORE = 2 << 8
-    FLASHLIGHT = 2 << 9
-    AUTOPLAY = 2 << 10
-    SPUNOUT = 2 << 11
-    RELAX2 = 2 << 12
-    PERFECT = 2 << 13
-    KEY4 = 2 << 14
-    KEY5 = 2 << 15
-    KEY6 = 2 << 16
-    KEY7 = 2 << 17
-    KEY8 = 2 << 18
-    KEYMOD = 2 << 19
-    FADEIN = 2 << 20
-    RANDOM = 2 << 21
-    LASTMOD = 2 << 22
-    KEY9 = 2 << 23
-    KEY10 = 2 << 24
-    KEY1 = 2 << 25
-    KEY3 = 2 << 26
-    KEY2 = 2 << 27
-    SCOREV2 = 2 << 28
+    NOMOD       = 0
+    NOFAIL      = 1 << 0
+    EASY        = 1 << 1
+    TOUCHSCREEN = 1 << 2
+    HIDDEN      = 1 << 3
+    HARDROCK    = 1 << 4
+    SUDDENDEATH = 1 << 5
+    DOUBLETIME  = 1 << 6
+    RELAX       = 1 << 7
+    HALFTIME    = 1 << 8
+    NIGHTCORE   = 1 << 9
+    FLASHLIGHT  = 1 << 10
+    AUTOPLAY    = 1 << 11
+    SPUNOUT     = 1 << 12
+    RELAX2      = 1 << 13
+    PERFECT     = 1 << 14
+    KEY4        = 1 << 15
+    KEY5        = 1 << 16
+    KEY6        = 1 << 17
+    KEY7        = 1 << 18
+    KEY8        = 1 << 19
+    KEYMOD      = 1 << 20
+    FADEIN      = 1 << 21
+    RANDOM      = 1 << 22
+    LASTMOD     = 1 << 23
+    KEY9        = 1 << 24
+    KEY10       = 1 << 25
+    KEY1        = 1 << 26
+    KEY3        = 1 << 27
+    KEY2        = 1 << 28
+    SCOREV2     = 1 << 29
 
 class Recalculator: # No safety checks in class.. be safe owo
     def __init__(self, gamemode: GameMode, relax: AkatsukiMode,
@@ -76,10 +76,10 @@ class Recalculator: # No safety checks in class.. be safe owo
         chdir(path.dirname(path.realpath(__file__)))
         self.connect_db()
 
-    def get_cached_map(self, beatmap_id: int) -> Optional[str]:
+    def get_map(self, beatmap_id: int) -> Optional[str]:
         filename = f'beatmaps/{beatmap_id}.osu'
 
-        if not path.exists(filename):
+        if not path.exists(filename): # cache miss
             if not (r := requests.get(f'https://old.ppy.sh/osu/{beatmap_id}')):
                 return # Failed to get beatmap from osu api
 
@@ -135,7 +135,7 @@ class Recalculator: # No safety checks in class.. be safe owo
                 print('Missing beatmap in DB for score.')
                 continue
 
-            if not (filename := self.get_cached_map(row['beatmap_id'])):
+            if not (filename := self.get_map(row['beatmap_id'])):
                 print(f'\x1b[0;91mFailed to get mapfile for {row["beatmap_id"]}\x1b[0m')
                 continue
 
@@ -197,6 +197,18 @@ class Recalculator: # No safety checks in class.. be safe owo
 
 if __name__ == '__main__':
     from sys import argv
+    if any(i in ('-h', '--help') for i in argv):
+        from sys import exit
+        print('\n'.join([
+            'Availaible launch flags:',
+            '-g  --gamemode | specify a specific gamemode (int)',
+            '-r  --relax    | specify whether to calculate vn/rx (0/1)',
+            '-rs --ranked   | specify a specific ranked status (int)',
+            '-l  --limit    | specify a limit for score recalculations (int)'
+        ]))
+        exit(0)
+
+
     if len(argv) % 2 == 0:
         raise Exception('Invalid argument count.')
 
