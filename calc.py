@@ -1,15 +1,14 @@
 from typing import Optional
+from os import chdir, path
+from sys import argv, exit
+import struct
+import requests
+from subprocess import run, PIPE
+from enum import IntEnum
+from math import isnan, isinf
 
 from db import dbConnector
 from mysql.connector import errorcode, Error as SQLError
-
-from os import chdir, path
-import struct
-
-from enum import IntEnum
-
-import requests
-from subprocess import run, PIPE
 
 class GameMode(IntEnum):
     STD = 0
@@ -158,13 +157,9 @@ class Recalculator: # No safety checks in class.. be safe owo
             process = run(f'{" ".join(command)} -obinary', shell = True, stdout = PIPE, stderr = PIPE)
             pp = struct.unpack('<f', process.stdout[-4:])[0]
 
-            if not pp:
-                print('Ignoring value.')
-                continue
-
             # ensure pp is a number
-            if pp != pp:
-                print('\x1b[0;91mPP is NaN\x1b[0m')
+            if not pp or isnan(pp) or isinf(pp):
+                print('\x1b[0;91mPP is NaN/inf/0\x1b[0m')
                 continue
 
             if row['ranked'] == RankedStatus.LOVED:
@@ -201,9 +196,7 @@ class Recalculator: # No safety checks in class.. be safe owo
         return __import__('config')
 
 if __name__ == '__main__':
-    from sys import argv
     if any(i in ('-h', '--help') for i in argv):
-        from sys import exit
         print('\n'.join([
             'Availaible launch flags:',
             '-g  --gamemode | specify a specific gamemode (int)',
