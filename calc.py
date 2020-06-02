@@ -66,12 +66,13 @@ class Mods(IntEnum):
 
 class Recalculator: # No safety checks in class.. be safe owo
     def __init__(self, gamemode: GameMode, relax: AkatsukiMode,
-                 ranked: RankedStatus, limit: int) -> None:
+                 ranked: RankedStatus, limit: int, beatmap_id: int) -> None:
 
         self.gamemode = gamemode
         self.table = 'scores_relax' if relax else 'scores'
         self.ranked = ranked
         self.limit = limit
+        self.beatmap_id = beatmap_id
 
         chdir(path.dirname(path.realpath(__file__)))
         self.connect_db()
@@ -120,6 +121,9 @@ class Recalculator: # No safety checks in class.. be safe owo
               AND beatmaps.ranked = {r}
               AND users.privileges & 1'''.format(
                   t = self.table, gm = self.gamemode, r = self.ranked)]
+
+        if self.beatmap_id:
+            query.append(f'AND beatmaps.beatmap_id = {self.beatmap_id}')
 
         if self.limit:
             query.append(f'LIMIT {self.limit}')
@@ -204,7 +208,8 @@ if __name__ == '__main__':
             '-g  --gamemode | specify a specific gamemode (int)',
             '-r  --relax    | specify whether to calculate vn/rx (0/1)',
             '-rs --ranked   | specify a specific ranked status (int)',
-            '-l  --limit    | specify a limit for score recalculations (int)'
+            '-l  --limit    | specify a limit for score recalculations (int)',
+            '-b  --beatmap  | specify a specific beatmap id (int)'
         ]))
         exit(0)
 
@@ -217,6 +222,7 @@ if __name__ == '__main__':
     relax = AkatsukiMode.RELAX
     ranked = RankedStatus.RANKED
     limit = 0
+    beatmap_id = 0
 
     for i in range(1, len(argv), 2):
         if argv[i] in ('-g', '--gamemode'):
@@ -240,5 +246,11 @@ if __name__ == '__main__':
             if (limit := int(argv[i + 1])) < 0:
                 raise Exception('Limit must be >= 0 (0 for no limit).')
 
-    r = Recalculator(gamemode, relax, ranked, limit)
+        elif argv[i] in ('-b', '--beatmap'):
+            if not argv[i + 1].isdecimal():
+                raise Exception('Beatmap must be an integer.')
+            if (beatmap_id := int(argv[i + 1])) < 0:
+                raise Exception('Beatmap must be >= 0 (0 for no specific ID).')
+
+    r = Recalculator(gamemode, relax, ranked, limit, beatmap_id)
     r.recalculate_pp() # TODO: add threadcount
