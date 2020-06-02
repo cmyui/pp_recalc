@@ -112,15 +112,17 @@ class Recalculator: # No safety checks in class.. be safe owo
         query = ['''
             SELECT
               {t}.id, {t}.mods, {t}.max_combo, {t}.100_count,
-              {t}.50_count, {t}.misses_count, beatmaps.beatmap_id
+              {t}.50_count, {t}.misses_count, beatmaps.beatmap_id, beatmaps.ranked
             FROM {t}
             LEFT JOIN beatmaps ON beatmaps.beatmap_md5 = {t}.beatmap_md5
             LEFT JOIN users ON users.id = {t}.userid
             WHERE {t}.completed = 3
               AND {t}.play_mode = {gm}
-              AND beatmaps.ranked = {r}
               AND users.privileges & 1'''.format(
-                  t = self.table, gm = self.gamemode, r = self.ranked)]
+                  t = self.table, gm = self.gamemode)]
+
+        if self.ranked:
+            query.append(f'AND beatmaps.ranked = {self.ranked}')
 
         if self.beatmap_id:
             query.append(f'AND beatmaps.beatmap_id = {self.beatmap_id}')
@@ -133,7 +135,6 @@ class Recalculator: # No safety checks in class.. be safe owo
             return
 
         print(f'Found {len(res)} scores to recalculate.')
-
         for row in res:
             if not row['beatmap_id']:
                 print('Missing beatmap in DB for score.')
@@ -166,7 +167,7 @@ class Recalculator: # No safety checks in class.. be safe owo
                 print('\x1b[0;91mPP is NaN\x1b[0m')
                 continue
 
-            if self.ranked == RankedStatus.LOVED:
+            if row['ranked'] == RankedStatus.LOVED:
                 self.db.execute(
                     f'UPDATE {self.table} SET score = %s, pp = 0.001 '
                     'WHERE id = %s', (pp, row['id']))
@@ -220,7 +221,7 @@ if __name__ == '__main__':
     # Default configuration
     gamemode = GameMode.STD
     relax = AkatsukiMode.RELAX
-    ranked = RankedStatus.RANKED
+    ranked = 0
     limit = 0
     beatmap_id = 0
 
