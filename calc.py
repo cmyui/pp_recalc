@@ -207,16 +207,13 @@ if __name__ == '__main__':
         ]))
         exit(0)
 
-
     if len(argv) % 2 == 0:
         raise Exception('Invalid argument count.')
 
     # Default configuration
     gamemode = GameMode.STD
     relax = AkatsukiMode.RELAX
-    ranked = 0
-    limit = 0
-    beatmap_id = 0
+    ranked = limit = beatmap_id = 0
 
     for i in range(1, len(argv), 2):
         if argv[i] in ('-g', '--gamemode'):
